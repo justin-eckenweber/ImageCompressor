@@ -9,6 +9,7 @@ public class Main {
             boolean resize = true;
             float quality = 0.7f;
             boolean customSize = false;
+            boolean keepFileType = false;
             int customHeight = -1;
             int customWidth = -1;
 
@@ -26,6 +27,11 @@ public class Main {
                     continue;
                 }
 
+                if (arg.startsWith("keep-file-type")) {
+                    keepFileType = true;
+                    continue;
+                }
+
                 if (arg.equalsIgnoreCase("no-resize")) resize = false;
             }
 
@@ -33,11 +39,11 @@ public class Main {
                 var folders = getAllFilesOfFolder("");
                 int folderCount = 0;
 
-                for (File folder : folders) if (folder.isDirectory()) folderCount++;
+                for (File folder : folders) if (folder.isDirectory() && !folder.getName().startsWith(".")) folderCount++;
 
                 int count = 1;
                 for (File folder : folders) {
-                    if (folder.isDirectory()) {
+                    if (folder.isDirectory() && !folder.getName().startsWith(".")) {
                         System.out.println();
                         System.out.println("Compressing Folder "+ folder.getName() + " [" + count++ + "/" + folderCount +  "]");
                         System.out.println();
@@ -45,7 +51,7 @@ public class Main {
 
                         for (File file : files) {
                             if (file.isFile()) {
-                                ImageCompressor.compress(new File(getJarPath() + File.separator + folder.getName() + File.separator + file.getName()), quality, resize, customSize, customWidth, customHeight);
+                                ImageCompressor.compress(new File(getJarPath() + File.separator + folder.getName() + File.separator + file.getName()), keepFileType, quality, resize, customSize, customWidth, customHeight);
                             }
                         }
                         System.out.println();
@@ -56,12 +62,18 @@ public class Main {
 
                 return;
             } else {
-                var files = getAllFilesOfFolder(folderName);
+                var inputFile = new File(getJarPath() + File.separator + folderName);
 
-                for (File file : files) {
-                    if (file.isFile()) {
-                        ImageCompressor.compress(new File(getJarPath() + File.separator + folderName + File.separator + file.getName()), quality, resize, customSize, customWidth, customHeight);
+                if (inputFile.isDirectory()) {
+                    var files = getAllFilesOfFolder(folderName);
+
+                    for (File file : files) {
+                        if (file.isFile() && !file.getName().startsWith(".")) {
+                            ImageCompressor.compress(new File(getJarPath() + File.separator + folderName + File.separator + file.getName()), keepFileType, quality, resize, customSize, customWidth, customHeight);
+                        }
                     }
+                } else {
+                    ImageCompressor.compress(inputFile, keepFileType, quality, resize, customSize, customWidth, customHeight);
                 }
             }
 
@@ -85,6 +97,6 @@ public class Main {
     }
 
     private static String getJarPath() {
-        return System.getProperty("java.class.path") + File.separator + ".." + File.separator;
+        return new File(Main.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getParent();
     }
 }
